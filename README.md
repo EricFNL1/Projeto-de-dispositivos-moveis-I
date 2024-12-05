@@ -1,17 +1,14 @@
-# lista_de_tarefas_aula
+# Gerenciador de Tarefas
 
-Uma lista de tarefas gerada na Aula de Programação para Dispositivos Móveis I - Fatec Itapira
-Como forma de persistencia dos dados foi utilizado o pacote shared_preferences para manter as tarefas da lista.
+Aplicativo de gerenciamento de tarefas desenvolvido em Flutter para a disciplina de Desenvolvimento Mobile.
 
-## Getting Started
+## Integrantes do grupo:
+- Eric
+- Marilia
+- Ricardo
+- Kaique
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Funcionalidades:
+- Adicionar, editar e excluir tarefas.
+- Classificação por categorias.
+- Busca e exportação de tarefas.

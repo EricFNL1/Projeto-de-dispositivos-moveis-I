@@ -29,11 +29,6 @@ class TodoApp extends StatelessWidget {
           ),
         ),
       ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.blue,
-      ),
-      themeMode: ThemeMode.light,
       home: TodoList(),
     );
   }
@@ -51,6 +46,9 @@ class _TodoListState extends State<TodoList> {
   String? _selectedCategory;
   String? _selectedPriority;
   String searchQuery = '';
+  int currentPage = 0;
+  int itemsPerPage = 4;
+
   List<String> _categories = ['Trabalho', 'Casa', 'Pessoal'];
   List<String> _priorities = ['Alta', 'Média', 'Baixa'];
 
@@ -84,34 +82,6 @@ class _TodoListState extends State<TodoList> {
     _saveTasks();
   }
 
-  void _editTask(int index) {
-    TextEditingController editController =
-    TextEditingController(text: _tasks[index]['title']);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Editar Tarefa'),
-          content: TextField(
-            controller: editController,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _tasks[index]['title'] = editController.text;
-                });
-                _saveTasks();
-                Navigator.pop(context);
-              },
-              child: Text('Salvar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _saveTasks() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setString('tasks', jsonEncode(_tasks));
@@ -137,15 +107,14 @@ class _TodoListState extends State<TodoList> {
         .toList();
   }
 
-  void _exportTasks() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/tasks.txt');
-    String taskList = _tasks
-        .map((task) =>
-    "${task['title']} - ${task['category']} (${task['priority']})")
-        .join('\n');
-    await file.writeAsString(taskList);
-    Share.shareFiles([file.path], text: 'Minhas Tarefas');
+  List<Map<String, dynamic>> _getPaginatedTasks() {
+    List<Map<String, dynamic>> filteredTasks = _getFilteredTasks();
+    int startIndex = currentPage * itemsPerPage;
+    int endIndex = startIndex + itemsPerPage;
+    return filteredTasks.sublist(
+      startIndex,
+      endIndex > filteredTasks.length ? filteredTasks.length : endIndex,
+    );
   }
 
   Color _getPriorityColor(String priority) {
@@ -163,6 +132,7 @@ class _TodoListState extends State<TodoList> {
 
   @override
   Widget build(BuildContext context) {
+    List<Map<String, dynamic>> paginatedTasks = _getPaginatedTasks();
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -237,9 +207,9 @@ class _TodoListState extends State<TodoList> {
             ),
             Expanded(
               child: ListView.builder(
-                itemCount: _getFilteredTasks().length,
+                itemCount: paginatedTasks.length,
                 itemBuilder: (context, index) {
-                  final task = _getFilteredTasks()[index];
+                  final task = paginatedTasks[index];
                   return Dismissible(
                     key: UniqueKey(),
                     background: Container(
@@ -255,7 +225,7 @@ class _TodoListState extends State<TodoList> {
                       child: Icon(Icons.delete, color: Colors.white),
                     ),
                     onDismissed: (direction) {
-                      _removeTask(index);
+                      _removeTask(index + currentPage * itemsPerPage);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Tarefa excluída!'),
@@ -279,22 +249,40 @@ class _TodoListState extends State<TodoList> {
                             _saveTasks();
                           },
                         ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.edit),
-                          onPressed: () => _editTask(index),
-                        ),
                       ),
                     ),
                   );
                 },
               ),
             ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: currentPage > 0
+                      ? () {
+                    setState(() {
+                      currentPage--;
+                    });
+                  }
+                      : null,
+                  child: Text('Página Anterior'),
+                ),
+                ElevatedButton(
+                  onPressed: (currentPage + 1) * itemsPerPage <
+                      _getFilteredTasks().length
+                      ? () {
+                    setState(() {
+                      currentPage++;
+                    });
+                  }
+                      : null,
+                  child: Text('Próxima Página'),
+                ),
+              ],
+            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _exportTasks,
-        child: Icon(Icons.share),
       ),
     );
   }

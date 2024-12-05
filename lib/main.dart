@@ -67,7 +67,6 @@ class _TodoListState extends State<TodoList> {
           'category': _selectedCategory,
           'priority': _selectedPriority ?? 'Média',
           'isCompleted': false,
-          'dateTime': DateTime.now().toIso8601String(),
         });
         _controller.clear();
         _selectedCategory = null;
@@ -85,11 +84,11 @@ class _TodoListState extends State<TodoList> {
   }
 
   void _editTask(int index) {
+    TextEditingController editController =
+    TextEditingController(text: _tasks[index]['title']);
     showDialog(
       context: context,
       builder: (context) {
-        TextEditingController editController =
-        TextEditingController(text: _tasks[index]['title']);
         return AlertDialog(
           title: Text('Editar Tarefa'),
           content: TextField(
@@ -127,6 +126,16 @@ class _TodoListState extends State<TodoList> {
     }
   }
 
+  List<Map<String, dynamic>> _getFilteredTasks() {
+    if (searchQuery.isEmpty) {
+      return _tasks;
+    }
+    return _tasks
+        .where((task) =>
+        task['title'].toLowerCase().contains(searchQuery.toLowerCase()))
+        .toList();
+  }
+
   void _exportTasks() async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/tasks.txt');
@@ -138,15 +147,17 @@ class _TodoListState extends State<TodoList> {
     Share.shareFiles([file.path], text: 'Minhas Tarefas');
   }
 
-  List<Map<String, dynamic>> _getFilteredTasks() {
-    if (searchQuery.isEmpty) {
-      return _tasks;
+  Color _getPriorityColor(String priority) {
+    switch (priority) {
+      case 'Alta':
+        return Colors.red.shade100;
+      case 'Média':
+        return Colors.yellow.shade100;
+      case 'Baixa':
+        return Colors.green.shade100;
+      default:
+        return Colors.transparent;
     }
-    return _tasks
-        .where((task) => task['title']
-        .toLowerCase()
-        .contains(searchQuery.toLowerCase()))
-        .toList();
   }
 
   @override
@@ -158,9 +169,7 @@ class _TodoListState extends State<TodoList> {
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
+        backgroundColor: Colors.blue,
       ),
       body: Container(
         padding: EdgeInsets.all(10),
@@ -174,18 +183,12 @@ class _TodoListState extends State<TodoList> {
                     controller: _controller,
                     decoration: InputDecoration(
                       labelText: 'Adicionar nova tarefa',
-                      filled: true,
-                      fillColor: Colors.grey[200],
                       suffixIcon: IconButton(
                         icon: Icon(Icons.add),
                         onPressed: _addTask,
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                      ),
                     ),
                   ),
-                  SizedBox(height: 10),
                   DropdownButton<String>(
                     value: _selectedCategory,
                     hint: Text('Selecione uma categoria'),
@@ -219,22 +222,17 @@ class _TodoListState extends State<TodoList> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  labelText: 'Buscar tarefas...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                ),
-                onChanged: (query) {
-                  setState(() {
-                    searchQuery = query;
-                  });
-                },
+            TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                labelText: 'Buscar tarefas...',
+                border: OutlineInputBorder(),
               ),
+              onChanged: (query) {
+                setState(() {
+                  searchQuery = query;
+                });
+              },
             ),
             Expanded(
               child: ListView.builder(
@@ -265,20 +263,12 @@ class _TodoListState extends State<TodoList> {
                       );
                     },
                     child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                      ),
-                      elevation: 2,
                       margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                      color: _getPriorityColor(task['priority']),
                       child: ListTile(
-                        title: Text(
-                          task['title'],
-                          style: TextStyle(fontSize: 18),
-                        ),
+                        title: Text(task['title']),
                         subtitle: Text(
-                          'Categoria: ${task['category']} | Prioridade: ${task['priority']}',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                            'Categoria: ${task['category']} | Prioridade: ${task['priority']}'),
                         leading: Checkbox(
                           value: task['isCompleted'],
                           onChanged: (bool? value) {
@@ -304,9 +294,7 @@ class _TodoListState extends State<TodoList> {
       floatingActionButton: FloatingActionButton(
         onPressed: _exportTasks,
         child: Icon(Icons.share),
-        backgroundColor: Colors.blue,
       ),
     );
   }
 }
-

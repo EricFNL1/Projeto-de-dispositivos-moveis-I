@@ -16,6 +16,11 @@ class TodoApp extends StatelessWidget {
       title: 'Gerenciador de Tarefas',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+        textTheme: TextTheme(
+          bodyLarge: TextStyle(fontSize: 18, color: Colors.black),
+          bodyMedium: TextStyle(fontSize: 16, color: Colors.black),
+        ),
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(),
           focusedBorder: OutlineInputBorder(
@@ -27,7 +32,7 @@ class TodoApp extends StatelessWidget {
         brightness: Brightness.dark,
         primarySwatch: Colors.blue,
       ),
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
       home: TodoList(),
     );
   }
@@ -43,8 +48,10 @@ class _TodoListState extends State<TodoList> {
   final TextEditingController _controller = TextEditingController();
   final TextEditingController searchController = TextEditingController();
   String? _selectedCategory;
+  String? _selectedPriority;
   String searchQuery = '';
   List<String> _categories = ['Trabalho', 'Casa', 'Pessoal'];
+  List<String> _priorities = ['Alta', 'Média', 'Baixa'];
 
   @override
   void initState() {
@@ -58,10 +65,13 @@ class _TodoListState extends State<TodoList> {
         _tasks.add({
           'title': _controller.text,
           'category': _selectedCategory,
+          'priority': _selectedPriority ?? 'Média',
           'isCompleted': false,
+          'dateTime': DateTime.now().toIso8601String(),
         });
         _controller.clear();
         _selectedCategory = null;
+        _selectedPriority = null;
       });
       _saveTasks();
     }
@@ -121,7 +131,8 @@ class _TodoListState extends State<TodoList> {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/tasks.txt');
     String taskList = _tasks
-        .map((task) => "${task['title']} - ${task['category']}")
+        .map((task) =>
+    "${task['title']} - ${task['category']} (${task['priority']})")
         .join('\n');
     await file.writeAsString(taskList);
     Share.shareFiles([file.path], text: 'Minhas Tarefas');
@@ -147,17 +158,12 @@ class _TodoListState extends State<TodoList> {
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
       ),
       body: Container(
         padding: EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.lightBlueAccent, Colors.blue],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
         child: Column(
           children: [
             Padding(
@@ -169,7 +175,7 @@ class _TodoListState extends State<TodoList> {
                     decoration: InputDecoration(
                       labelText: 'Adicionar nova tarefa',
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: Colors.grey[200],
                       suffixIcon: IconButton(
                         icon: Icon(Icons.add),
                         onPressed: _addTask,
@@ -192,6 +198,21 @@ class _TodoListState extends State<TodoList> {
                     onChanged: (String? newValue) {
                       setState(() {
                         _selectedCategory = newValue;
+                      });
+                    },
+                  ),
+                  DropdownButton<String>(
+                    value: _selectedPriority,
+                    hint: Text('Selecione uma prioridade'),
+                    items: _priorities.map((String priority) {
+                      return DropdownMenuItem<String>(
+                        value: priority,
+                        child: Text(priority),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedPriority = newValue;
                       });
                     },
                   ),
@@ -250,8 +271,14 @@ class _TodoListState extends State<TodoList> {
                       elevation: 2,
                       margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                       child: ListTile(
-                        title: Text(task['title']),
-                        subtitle: Text('Categoria: ${task['category']}'),
+                        title: Text(
+                          task['title'],
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        subtitle: Text(
+                          'Categoria: ${task['category']} | Prioridade: ${task['priority']}',
+                          style: TextStyle(fontSize: 16),
+                        ),
                         leading: Checkbox(
                           value: task['isCompleted'],
                           onChanged: (bool? value) {
@@ -277,7 +304,7 @@ class _TodoListState extends State<TodoList> {
       floatingActionButton: FloatingActionButton(
         onPressed: _exportTasks,
         child: Icon(Icons.share),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.blue,
       ),
     );
   }
